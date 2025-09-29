@@ -1,2 +1,3 @@
 *.pyc
 lyra.egg-info/
+checkpoints/
