@@ -19,6 +19,7 @@ IMAGE_PATH="${IMAGE_PATH:-}"
 NUM_GPUS="${NUM_GPUS:-1}"
 REINSTALL_APEX="${REINSTALL_APEX:-False}"
 
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --offload-gpu|-o)
@@ -38,23 +39,32 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --help|-h)
-            echo "Usage: $0 --image-path IMAGE_PATH [--offload-gpu]"
+            echo "Usage: $0 --image-path IMAGE_PATH [--offload-gpu] [--num-gpus N] [--reinstall-apex]"
             echo ""
             echo "Optional Arguments:"
-            echo "  --offload-gpu, -o  Offload GPU (default: False)"
-            echo "  --image-path, -i  Image path (required)"
-            echo "  --num-gpus, -n    Number of GPUs (default: 1)"
-            echo "  --reinstall-apex, -r  Reinstall Apex (default: False)"
+            echo "  --offload-gpu, -o        Offload GPU (default: False)"
+            echo "  --image-path, -i         Image path (required)"
+            echo "  --num-gpus, -n           Number of GPUs (default: 1)"
+            echo "  --reinstall-apex, -r     Reinstall Apex (default: False)"
             exit 0
             ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help or -h for usage."
+            exit 1
+            ;;
     esac
-    shift
 done
 
 if [ -z "$IMAGE_PATH" ]; then
     echo "Image path is required"
     exit 1
 fi
+
+echo "REINSTALL_APEX: $REINSTALL_APEX"
+echo "OFFLOAD_GPU: $OFFLOAD_GPU"
+echo "IMAGE_PATH: $IMAGE_PATH"
+echo "NUM_GPUS: $NUM_GPUS"
 
 if [ "$REINSTALL_APEX" = "True" ]; then
     uv sync
