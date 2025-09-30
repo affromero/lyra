@@ -17,6 +17,7 @@ fi
 OFFLOAD_GPU="${OFFLOAD_GPU:-False}"
 IMAGE_PATH="${IMAGE_PATH:-}"
 NUM_GPUS="${NUM_GPUS:-1}"
+REINSTALL_APEX="${REINSTALL_APEX:-False}"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -32,6 +33,10 @@ while [[ $# -gt 0 ]]; do
             NUM_GPUS="$2"
             shift 2
             ;;
+        --reinstall-apex|-r)
+            REINSTALL_APEX="True"
+            shift
+            ;;
         --help|-h)
             echo "Usage: $0 --image-path IMAGE_PATH [--offload-gpu]"
             echo ""
@@ -39,6 +44,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --offload-gpu, -o  Offload GPU (default: False)"
             echo "  --image-path, -i  Image path (required)"
             echo "  --num-gpus, -n    Number of GPUs (default: 1)"
+            echo "  --reinstall-apex, -r  Reinstall Apex (default: False)"
             exit 0
             ;;
     esac
@@ -50,6 +56,10 @@ if [ -z "$IMAGE_PATH" ]; then
     exit 1
 fi
 
+if [ "$REINSTALL_APEX" = "True" ]; then
+    uv sync
+    ./install_apex.sh # runs everytime because uv sync removes it
+fi
 
 command="python cosmos_predict1/diffusion/inference/gen3c_single_image_sdg.py \
     --checkpoint_dir checkpoints \
@@ -69,4 +79,5 @@ if [ "$OFFLOAD_GPU" = "True" ]; then
     --disable_prompt_encoder"
 fi
 
+echo "Running command: $command"
 $command
