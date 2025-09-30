@@ -18,6 +18,7 @@ OFFLOAD_GPU="${OFFLOAD_GPU:-False}"
 IMAGE_PATH="${IMAGE_PATH:-}"
 NUM_GPUS="${NUM_GPUS:-1}"
 REINSTALL_APEX="${REINSTALL_APEX:-False}"
+JUST_3DGS="${JUST_3DGS:-False}"
 
 
 while [[ $# -gt 0 ]]; do
@@ -38,6 +39,10 @@ while [[ $# -gt 0 ]]; do
             REINSTALL_APEX="True"
             shift
             ;;
+        --just-3dgs|-j)
+            JUST_3DGS="True"
+            shift
+            ;;
         --help|-h)
             echo "Usage: $0 --image-path IMAGE_PATH [--offload-gpu] [--num-gpus N] [--reinstall-apex]"
             echo ""
@@ -46,6 +51,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --image-path, -i         Image path (required)"
             echo "  --num-gpus, -n           Number of GPUs (default: 1)"
             echo "  --reinstall-apex, -r     Reinstall Apex (default: False)"
+            echo "  --just-3dgs, -j          Just run 3DGS (default: False)"
             exit 0
             ;;
         *)
@@ -65,29 +71,40 @@ echo "REINSTALL_APEX: $REINSTALL_APEX"
 echo "OFFLOAD_GPU: $OFFLOAD_GPU"
 echo "IMAGE_PATH: $IMAGE_PATH"
 echo "NUM_GPUS: $NUM_GPUS"
+echo "JUST_3DGS: $JUST_3DGS"
 
 if [ "$REINSTALL_APEX" = "True" ]; then
     uv sync
     ./install_apex.sh # runs everytime because uv sync removes it
 fi
 
-command="python cosmos_predict1/diffusion/inference/gen3c_single_image_sdg.py \
-    --checkpoint_dir checkpoints \
-    --num_gpus $NUM_GPUS \
-    --input_image_path $IMAGE_PATH \
-    --video_save_folder assets/demo/static/diffusion_output_generated \
-    --foreground_masking \
-    --multi_trajectory"
+if [ "$JUST_3DGS" = "False" ]; then
+    echo "================ Running Latents =================="
+    command="python cosmos_predict1/diffusion/inference/gen3c_single_image_sdg.py \
+        --checkpoint_dir checkpoints \
+        --num_gpus $NUM_GPUS \
+        --input_image_path $IMAGE_PATH \
+        --video_save_folder assets/demo/static/diffusion_output_generated \
+        --foreground_masking \
+        --multi_trajectory"
 
-if [ "$OFFLOAD_GPU" = "True" ]; then
-    command="$command --offload_diffusion_transformer \
-    --offload_tokenizer \
-    --offload_text_encoder_model \
-    --offload_prompt_upsampler \
-    --offload_guardrail_models \
-    --disable_guardrail \
-    --disable_prompt_encoder"
+    if [ "$OFFLOAD_GPU" = "True" ]; then
+        command="$command --offload_diffusion_transformer \
+        --offload_tokenizer \
+        --offload_text_encoder_model \
+        --offload_prompt_upsampler \
+        --offload_guardrail_models \
+        --disable_guardrail \
+        --disable_prompt_encoder"
+    fi
+
+    echo "Running command: $command"
+    $command
 fi
 
-echo "Running command: $command"
-$command
+echo "================ Running with 3DGS =================="
+command_3dgs="python sample.py --config configs/demo/lyra_static.yaml"
+echo "Running command: $command_3dgs"
+$command_3dgs
+
+echo "================ Done =================="
